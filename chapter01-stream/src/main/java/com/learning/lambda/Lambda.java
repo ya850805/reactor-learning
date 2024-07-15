@@ -1,9 +1,7 @@
 package com.learning.lambda;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.function.*;
 import java.util.stream.Collectors;
 
 /**
@@ -17,6 +15,34 @@ import java.util.stream.Collectors;
  **/
 public class Lambda {
     public static void main(String[] args) {
+        // 有入參，無出參(消費者)
+        BiConsumer<String, String> consumer = (a, b) -> { // 能接收2個入參
+            System.out.println("哈哈：" + a + "，呵呵：" + b);
+        };
+        consumer.accept("1", "2");
+
+        // 有入參，有出參(多功能函數)
+        Function<String, Integer> function = Integer::parseInt;
+        System.out.println(function.apply("2"));
+        BiFunction<String, Integer, Long> biFunction = (a, b) -> 8L;
+        System.out.println(biFunction.apply("a", 1));
+
+
+        // 無入參，無出參(普通函數)
+        Runnable runnable = () -> System.out.println("aaa");
+        new Thread(runnable).start();
+
+        // 無入參，有出參(提供者)
+        Supplier<String> supplier = () -> UUID.randomUUID().toString();
+        System.out.println(supplier.get());
+
+        // 斷言，返回boolean
+        Predicate<Integer> even = (t) -> t % 2 == 0;
+        System.out.println(even.test(6)); // 正向判斷
+        System.out.println(even.negate().test(6));  // 反向判斷
+    }
+
+    public static void main2(String[] args) {
         var names = new ArrayList<String>();
         names.add("Alice");
         names.add("Bob");
