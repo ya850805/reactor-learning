@@ -16,5 +16,6 @@
     </properties>
     <modules>
         <module>chapter01-stream</module>
+        <module>chapter02-reactor</module>
     </modules>
 </project>
