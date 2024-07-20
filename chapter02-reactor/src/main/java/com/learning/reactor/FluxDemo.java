@@ -41,7 +41,46 @@ import java.time.Duration;
  *      8. doOnDiscard：流中元素被忽略的時候
  **/
 public class FluxDemo {
+    /**
+     * subscribe：訂閱流，沒訂閱之前流什麼也不做
+     *      流的元素開始流動，發生數據變化
+     *      響應式編程：數據流(Flux/Mono) + 變化傳播(操作)
+     * @param args
+     */
     public static void main(String[] args) {
+        Flux<String> flux = Flux.range(1, 10)
+                .map(i -> {
+                    System.out.println("map..." + i);
+                    if (i == 9) {
+                        i = 10 / (9 - i);  // 數學運算異常
+                    }
+                    return "哈哈" + i;
+                });
+
+        flux.subscribe();  // 流被訂閱(默認訂閱者)
+        flux.subscribe(v -> System.out.println("v = " + v));  // 指定訂閱規則(自定義正常消費者，只消費正常元素)
+        flux.subscribe(
+            v -> System.out.println("v = " + v),  // 流元素消費
+            throwable -> System.out.println("throwable = " + throwable),  // 感知異常結束
+            () -> System.out.println("流結束了...")   // 感知正常結束
+        );
+    }
+
+    public static void log(String[] args) {
+        Flux.concat(Flux.just(1, 2, 3), Flux.just(7, 8, 9))
+                .subscribe(System.out::println);
+
+        // Flux、Mono、彈珠圖、事件感知API，每個操作都是操作的上個流的東西
+        Flux.range(1, 7)
+//                .log()  // 日誌寫在這邊會有1~7的日誌
+                .filter(i -> i > 3)  // 挑出 > 3的元素
+//                .log()  // 日誌寫在這邊只會有4~7的日誌
+                .map(i -> "haha" + i)  // 帶上一個前綴
+                .log()
+                .subscribe(System.out::println);
+    }
+
+    public static void doOnXxx(String[] args) {
         // doOnNext：表示流中某個元素到達以後觸發一個回調
         // 重要：doOnXxx要感知某個流的事件，就寫在這個流的後面、新流的前面
         Flux.just(1, 2, 3, 4, 5, 6, 7, 0, 5, 6)
