@@ -41,13 +41,20 @@ import java.time.Duration;
  *      8. doOnDiscard：流中元素被忽略的時候
  **/
 public class FluxDemo {
+    public static void main(String[] args) {
+        customSubscribe(args);
+    }
+
     /**
      * subscribe：訂閱流，沒訂閱之前流什麼也不做
      *      流的元素開始流動，發生數據變化
      *      響應式編程：數據流(Flux/Mono) + 變化傳播(操作)
+     *
+     * doOnXxx：發生這個事件的時候產生一個回調，通知你(不能改變)
+     * onXxx：發生這個事件後執行一個動作，可以改變元素、信號。 ex. onErrorComplete
      * @param args
      */
-    public static void main(String[] args) {
+    public static void customSubscribe(String[] args) {
         Flux<String> flux = Flux.range(1, 10)
                 .map(i -> {
                     System.out.println("map..." + i);
@@ -55,15 +62,62 @@ public class FluxDemo {
                         i = 10 / (9 - i);  // 數學運算異常
                     }
                     return "哈哈" + i;
-                });
+                })
+                .onErrorComplete();  // 流錯誤的時候，把錯誤吃掉轉為正常信號
 
-        flux.subscribe();  // 流被訂閱(默認訂閱者)
-        flux.subscribe(v -> System.out.println("v = " + v));  // 指定訂閱規則(自定義正常消費者，只消費正常元素)
-        flux.subscribe(
-            v -> System.out.println("v = " + v),  // 流元素消費
-            throwable -> System.out.println("throwable = " + throwable),  // 感知異常結束
-            () -> System.out.println("流結束了...")   // 感知正常結束
-        );
+//        flux.subscribe();  // 流被訂閱(默認訂閱者)
+//        flux.subscribe(v -> System.out.println("v = " + v));  // 指定訂閱規則(自定義正常消費者，只消費正常元素)
+//        flux.subscribe(
+//            v -> System.out.println("v = " + v),  // 流元素消費
+//            throwable -> System.out.println("throwable = " + throwable),  // 感知異常結束
+//            () -> System.out.println("流結束了...")   // 感知正常結束
+//        );
+
+        System.out.println("---------------");
+
+        // 流的生命週期鉤子可以傳播給訂閱者
+        flux.subscribe(new BaseSubscriber<String>() {
+            // 生命週期鉤子：訂閱關係綁定的時候觸發
+            @Override
+            protected void hookOnSubscribe(Subscription subscription) {
+                // 流被訂閱的時候觸發
+                System.out.println("綁定了..." + subscription);
+
+                // 找發布者要數據
+                request(1);  // 要一個數據，給上游傳入數據傳送一個信號
+//                requestUnbounded();  // 要無限個數據
+            }
+
+            @Override
+            protected void hookOnNext(String value) {
+                System.out.println("數據到達：" + value);
+                if ("哈哈5".equals(value)) {
+                    cancel();  // 取消流
+                }
+                request(1);  // 繼續要一個數據
+            }
+
+            // hookOnComplete, hookOnError 二選一執行
+            @Override
+            protected void hookOnComplete() {
+                System.out.println("流正常結束");
+            }
+
+            @Override
+            protected void hookOnError(Throwable throwable) {
+                System.out.println("流異常..." + throwable);
+            }
+
+            @Override
+            protected void hookOnCancel() {
+                System.out.println("流被取消...");
+            }
+
+            @Override
+            protected void hookFinally(SignalType type) {
+                System.out.println("最終回調，一定會執行");
+            }
+        });
     }
 
     public static void log(String[] args) {
