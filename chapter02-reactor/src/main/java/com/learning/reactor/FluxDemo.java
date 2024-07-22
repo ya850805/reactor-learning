@@ -8,6 +8,7 @@ import reactor.core.publisher.SignalType;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 
 /**
  * @author jason
@@ -42,7 +43,30 @@ import java.time.Duration;
  **/
 public class FluxDemo {
     public static void main(String[] args) {
-        customSubscribe(args);
+//        customSubscribe(args);
+        buffer(args);
+    }
+
+    public static void buffer(String[] args) {
+        Flux<List<Integer>> flux = Flux.range(1, 10)
+                .buffer(3);// 緩衝區，緩衝3個元素。消費者一次最多可以拿到3個元素，湊滿數批量發給消費者
+
+//        flux.subscribe(v -> System.out.println("v的類型：" + v.getClass() + " v的值：" + v));
+
+        // 消費者每次request(1)，拿到的是3個數據(同buffer大小)
+        // request(N)：找發布者請求N次數據，總共能得到 (N * bufferSize) 個數據
+        flux.subscribe(new BaseSubscriber<List<Integer>>() {
+            @Override
+            protected void hookOnSubscribe(Subscription subscription) {
+                System.out.println("綁定關係...");
+                request(1);
+            }
+
+            @Override
+            protected void hookOnNext(List<Integer> value) {
+                System.out.println("元素：" + value);
+            }
+        });
     }
 
     /**
