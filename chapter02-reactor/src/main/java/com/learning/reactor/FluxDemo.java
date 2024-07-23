@@ -44,7 +44,18 @@ import java.util.List;
 public class FluxDemo {
     public static void main(String[] args) {
 //        customSubscribe(args);
-        buffer(args);
+//        buffer(args);
+        limit(args);
+    }
+
+    public static void limit(String[] args) {
+        Flux.range(1, 1000)
+                .log()  // 限流觸發看上游是怎麼限流獲取數據的
+                .limitRate(100)  // 第一次request(100)，以後request(75)
+                .subscribe();
+
+        // 75% 預取策略：limitRate(100)
+        // 第一次抓取100個數據，如果75%的元素已經處理了，繼續抓取新的75%元素
     }
 
     public static void buffer(String[] args) {
