@@ -1,10 +1,7 @@
 package com.learning.reactor;
 
 import org.reactivestreams.Subscription;
-import reactor.core.publisher.BaseSubscriber;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.SignalType;
+import reactor.core.publisher.*;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -32,7 +29,7 @@ import java.util.List;
  *          ON_CONTEXT：感知上下文
  *
  *  doOnXxx API觸發時機：
- *      1. doOnNext：每個數據(流的數據)到達的時候觸發
+ *      1. doOnNext：每個數據(流的數據)到達的時候發
  *      2. doOnEach：每個元素(流的數據和信號)到達的時候觸發
  *      3. doOnRequest：消費者請求流元素的時候
  *      4. doOnError：流發生錯誤
@@ -42,10 +39,51 @@ import java.util.List;
  *      8. doOnDiscard：流中元素被忽略的時候
  **/
 public class FluxDemo {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
 //        customSubscribe(args);
 //        buffer(args);
-        limit(args);
+//        limit(args);
+//        generate(args);
+        create(args);
+    }
+
+    public static void create(String[] args) throws InterruptedException {
+
+        Flux.create(fluxSink -> {
+            MyListener myListener = new MyListener(fluxSink);
+            for (int i = 0; i < 100; i++) {
+                myListener.online("張" + i);
+            }
+        })
+        .log().subscribe();
+    }
+
+    /**
+     * 編程方式創建序列(同步環境下使用generate)
+     * Sink：接收器、水槽、通道
+     * Source：數據源  Sink：接收端
+     * @param args
+     */
+    public static void generate(String[] args) {
+        // 0-10
+        Flux<Object> flux = Flux.generate(() -> 0, // 初始值
+                (state, sink) -> {
+            if (state <= 10) {
+                sink.next(state);  // 把元素傳出去
+            } else {
+                sink.complete();  // 完成信號
+            }
+
+            if (state == 7) {
+                sink.error(new RuntimeException("遇到7，拋出錯誤..."));
+            }
+
+            return state + 1;  // 返回新的迭代state值
+        });
+
+        flux.log()
+                .doOnError(throwable -> System.out.println("throwable = " + throwable))
+                .subscribe();
     }
 
     public static void limit(String[] args) {
@@ -277,4 +315,18 @@ public class FluxDemo {
         System.in.read();  // 測試使用，因為流是異步的，控制台輸入一個字，整個主線程才會退出
     }
 
+}
+
+class MyListener {
+    FluxSink<Object> sink;
+
+    public MyListener(FluxSink<Object> sink) {
+        this.sink = sink;
+    }
+
+    // 用戶登入，觸發online監聽
+    public void online(String userName) {
+        System.out.println("用戶登入了：" + userName);
+        sink.next(userName); // 傳入用戶
+    }
 }
