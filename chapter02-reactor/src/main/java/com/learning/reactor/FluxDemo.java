@@ -44,7 +44,24 @@ public class FluxDemo {
 //        buffer(args);
 //        limit(args);
 //        generate(args);
-        create(args);
+//        create(args);
+        handle(args);
+    }
+
+    /**
+     * handle()：自定義處理流中數據的規則
+     * map()所有返回的類型類型必須一致，例如返回是一個Integer stream，但是handle()則可以自定義
+     * @param args
+     */
+    public static void handle(String[] args) {
+        Flux.range(1, 10)
+                .handle((value, sink) -> {
+                    System.out.println("拿到的值：" + value);
+                    // 這邊可以做自定義操作，像是從數據庫依照value查到name等等的，之後把name通過sink發送出去
+                    sink.next("張三" + value);  // sink就是可以向下發送數據的通道
+                })
+                .log()
+                .subscribe();
     }
 
     public static void create(String[] args) throws InterruptedException {
