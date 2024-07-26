@@ -2,10 +2,16 @@ package com.learning.reactor;
 
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.*;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author jason
@@ -39,13 +45,50 @@ import java.util.List;
  *      8. doOnDiscard：流中元素被忽略的時候
  **/
 public class FluxDemo {
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, IOException {
 //        customSubscribe(args);
 //        buffer(args);
 //        limit(args);
 //        generate(args);
 //        create(args);
-        handle(args);
+//        handle(args);
+//        thread(args);
+        thread1(args);
+
+        System.in.read();
+    }
+
+    public static void thread1(String[] args) {
+        Scheduler s = Schedulers.newParallel("parallel-scheduler", 4);
+
+        final Flux<String> flux = Flux
+                .range(1, 2)
+                .map(i -> 10 + i)  // 只要不指定線程池，默認發布者用的線程就是訂閱者的線程
+                .log()
+                .publishOn(s)
+                .map(i -> "value " + i)  // 這邊才是發布者指定的線程
+                .log();
+
+        new Thread(() -> flux.subscribe(System.out::println)).start();
+    }
+
+    public static void thread(String[] args) {
+        // 響應式編程：全異步、消息、事件回調
+        // 默認還是用當前線程(main)，生成整個流、發布流、流操作
+        Flux.range(1, 10)
+                .publishOn(Schedulers.boundedElastic())  // 在哪個線程池把這個流的數據和操作執行了，以下的所有操作都是用該線程池
+                .log()
+                .subscribe();
+
+        // publishOn：改變發布者所在線程池
+        // subscribeOn：改變訂閱者所在的線程池
+
+        // 調度器：線程池
+//        Schedulers.immediate();  // 無執行上下文，當前線程運行所有操作
+//        Schedulers.single();  // 使用固定的一個單線程
+//        Schedulers.boundedElastic();  // 有界、彈性調度，不是無限擴充的線程池，線程池中有10 * CPU核心個線程，隊列默認100k，keepAliveTime：60s
+//        Schedulers.fromExecutor(new ThreadPoolExecutor(4, 8, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000)));  // 自定義線程池
+//        Schedulers.parallel();  // 并發池
     }
 
     /**
