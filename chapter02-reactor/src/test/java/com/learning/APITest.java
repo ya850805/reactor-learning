@@ -170,4 +170,111 @@ public class APITest {
                 .log()
                 .subscribe(v -> System.out.println("v = " + v));
     }
+
+    /**
+     * subscribe：消費者可以感知正常元素(try)與流發生錯誤的(catch)
+     */
+    @Test
+    void error() {
+        System.out.println("onErrorReturn：返回一個兜底默認值");
+        Flux.just(1, 2, 0, 4)
+                .map(i -> "100 / " + i + " = " + (100 / i))
+                .onErrorReturn(ArithmeticException.class, "ArithmeticException：Divide by zero...(錯誤發生時的默認返回)")
+                .subscribe(v -> System.out.println("v = " + v),
+                        err -> System.out.println("err = " + err),
+                        () -> System.out.println("流結束"));
+
+        System.out.println("=====");
+
+        System.out.println("onErrorResume：返回一個兜底方法");
+        Flux.just(1, 2, 0, 4)
+                .map(i -> "100 / " + i + " = " + (100 / i))
+                .onErrorResume(error -> Mono.just("哈哈777"))
+                .subscribe(v -> System.out.println("v = " + v),
+                        err -> System.out.println("err = " + err),
+                        () -> System.out.println("流結束"));
+
+        System.out.println("=====");
+
+        System.out.println("根據錯誤返回新值");
+        Flux.just(1, 2, 0, 4)
+                .map(i -> "100 / " + i + " = " + (100 / i))
+                .onErrorResume(this::errorResume)
+                .subscribe(v -> System.out.println("v = " + v),
+                        err -> System.out.println("err = " + err),
+                        () -> System.out.println("流結束"));
+
+        System.out.println("=====");
+
+        System.out.println("onErrorMap：捕獲並包裝一個異常");
+        Flux.just(1, 2, 0, 4)
+                .map(i -> "100 / " + i + " = " + (100 / i))
+                .onErrorMap(err -> new BusinessException(err.getMessage() + "(自定義異常...)"))
+                .subscribe(v -> System.out.println("v = " + v),
+                        err -> System.out.println("err = " + err),
+                        () -> System.out.println("流結束"));
+
+        System.out.println("=====");
+
+        System.out.println("doOnError：不吃掉異常，只在異常發生時做事");
+        Flux.just(1, 2, 0, 4)
+                .map(i -> "100 / " + i + " = " + (100 / i))
+                .doOnError(err -> {
+                    System.out.println("error已被紀錄 = " + err);
+                })
+                .subscribe(v -> System.out.println("v = " + v),
+                        err -> System.out.println("err = " + err),
+                        () -> System.out.println("流結束"));
+
+        System.out.println("=====");
+
+        System.out.println("doFinally：正常或錯誤都會觸發");
+        Flux.just(1, 2, 3, 4)
+                .map(i -> "100 / " + i + " = " + (100 / i))
+//                .doOnError(err -> {
+//                    System.out.println("error已被紀錄 = " + err);
+//                })
+                .doFinally(signalType -> System.out.println("流信號：" + signalType))
+                .subscribe(v -> System.out.println("v = " + v),
+                        err -> System.out.println("err = " + err),
+                        () -> System.out.println("流結束"));
+
+        System.out.println("=====");
+
+        System.out.println("onErrorContinue：忽略當前異常，僅通知紀錄，繼續推進");
+        Flux.just(1, 2, 3, 0, 5)
+                .map(i -> 10 / i)
+                .onErrorContinue((error, value) -> {
+                    System.out.println("err = " + error);
+                    System.out.println("value = " + value);
+                    System.out.println("發現" + value + "有問題，繼續執行其他的");
+                })  // 發生錯誤繼續
+                .subscribe(v -> System.out.println("v = " + v),
+                        err -> System.out.println("err = " + err),
+                        () -> System.out.println("流結束"));
+
+        System.out.println("=====");
+
+        System.out.println("onErrorStop & onErrorComplete");
+        Flux.just(1, 2, 3, 0, 5)
+                .map(i -> 10 / i)
+                .onErrorStop()
+//                .onErrorComplete()  // 把錯誤結束信號，替換為正常結束信號
+                .subscribe(v -> System.out.println("v = " + v),
+                        err -> System.out.println("err = " + err),
+                        () -> System.out.println("流結束"));
+
+    }
+    Mono<String> errorResume(Throwable throwable) {
+        if (throwable instanceof NullPointerException) {
+            return Mono.just("錯誤：空指針異常");
+        }
+        return Mono.just("錯誤：" + throwable.getMessage());
+    }
+}
+
+class BusinessException extends RuntimeException {
+    public BusinessException(String msg) {
+        super(msg);
+    }
 }
