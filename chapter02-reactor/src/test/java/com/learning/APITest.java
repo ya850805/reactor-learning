@@ -3,10 +3,15 @@ package com.learning;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -270,6 +275,119 @@ public class APITest {
             return Mono.just("錯誤：空指針異常");
         }
         return Mono.just("錯誤：" + throwable.getMessage());
+    }
+
+    @Test
+    void retryAndTimeout() throws IOException {
+        Flux.just(1)
+                .delayElements(Duration.ofSeconds(3))
+                .log()
+                .timeout(Duration.ofSeconds(2))
+                .retry(2)  // 把流從頭到尾重新請求一次
+                .onErrorReturn(2)
+                .map(i -> i + "哈哈")
+//                .log()
+                .subscribe(v -> System.out.println("v = " + v));
+
+        System.in.read();
+    }
+
+    @Test
+    void sinks() throws IOException, InterruptedException {
+//        Sinks.many();  // 發送Flux數據
+//        Sinks.one();  // 發送Mono數據
+
+        // Sinks：接受器，數據管道，所有數據順著這個管道往下走的
+
+//        Sinks.many().unicast(); // 單波，這個管道只能綁定單個消費者
+//        Sinks.many().multicast(); // 多波，這個管道能綁定多個消費者
+//        Sinks.many().replay(); // 重放，這個管道能重放元素，是否給後來的訂閱者把之前的元素依然發給他
+        // 從頭消費還是從訂閱的那一刻消費
+
+//        Sinks.Many<Object> many = Sinks.many()
+//                .multicast()
+//                .onBackpressureBuffer();  // 背壓隊列
+
+        // 發布者數據重放
+        Sinks.Many<Object> many = Sinks.many().replay().limit(3);
+
+        new Thread(() -> {
+            for (int i = 0; i < 5; i++) {
+                many.tryEmitNext("a-" + i);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
+
+        many.asFlux().subscribe(v -> System.out.println("v1 = " + v));
+        Thread.sleep(1000);
+        many.asFlux().subscribe(v -> System.out.println("v2 = " + v));  // 默認訂閱者從訂閱的那一刻開始接受元素，重放模式需要使用.replay()
+
+        System.in.read();
+    }
+
+    @Test
+    void cache() throws IOException {
+        Flux<Integer> cache = Flux.range(1, 10)
+                .delayElements(Duration.ofSeconds(1))
+                .cache(1); // 緩存元素
+
+        cache.subscribe();
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            cache.subscribe(v -> System.out.println("v = " + v));
+        });
+
+        System.in.read();
+    }
+
+    @Test
+    void block() {
+        Integer last = Flux.just(1, 2, 4)
+                .map(i -> i + 10)
+                .blockLast();
+        System.out.println(last);
+
+        List<Integer> integers = Flux.just(1, 2, 4)
+                .map(i -> i + 10)
+                .collectList()
+                .block();  // block也是一種訂閱者
+        System.out.println(integers);
+    }
+
+    @Test
+    void parallelFlux() {
+        // 100個數據，8個線程，分批處理
+        Flux.range(1, 100)
+                .buffer(10)
+                .parallel(8)
+                .runOn(Schedulers.newParallel("yy"))  // 中間操作並行
+                .log()
+                .flatMap(Flux::fromIterable)
+                .collectSortedList(Integer::compare)
+                .subscribe(v -> System.out.println("v = " + v));
+    }
+
+    @Test
+    void threadlocal() {
+        // ThreadLocal在響應式編程中無法使用
+        // 響應式中，數據流期間共享數據，Context API：Context：讀寫ContextView：只讀
+        Flux.just(1, 2, 3)
+                .transformDeferredContextual((flux, context) -> {
+                    System.out.println("flux = " + flux);
+                    System.out.println("context = " + context);
+                    return flux.map(i -> i + "===>" + context.get("prefix"));
+                })  // 支持context的中間操作
+                .contextWrite(Context.of("prefix", "哈哈"))  // ThreadLocal共享了數據，上游的所有人能看到，Context由下游傳播給上游
+                .subscribe(v -> System.out.println("v = " + v));
     }
 }
 
