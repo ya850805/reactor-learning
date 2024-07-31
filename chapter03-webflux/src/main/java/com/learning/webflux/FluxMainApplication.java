@@ -16,7 +16,7 @@ import java.net.URI;
  * @create 2024/7/29 20:43
  **/
 public class FluxMainApplication {
-    public static void main(String[] args) throws IOException {
+    public static void test(String[] args) throws IOException {
         // 編寫一個能處理請求的服務器
 
         // 1. 創建一個能處理Http請求的處理器，參數：請求、響應，返回值：Mono<Void> 代表處理完成的信號
