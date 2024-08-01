@@ -1,10 +1,18 @@
 package com.learning.webflux.controller;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -23,7 +31,16 @@ import java.time.Duration;
 public class HelloController {
 
     @GetMapping("/hello")
-    public String hello(@RequestParam(value = "key", required = false, defaultValue = "哈哈") String key) {
+    public String hello(@RequestParam(value = "key", required = false, defaultValue = "哈哈") String key,
+                        ServerWebExchange exchange, WebSession session, HttpMethod method,
+                        HttpEntity<String> entity, @RequestPart("file-data") FilePart file) {
+        ServerHttpRequest request = exchange.getRequest();
+        ServerHttpResponse response = exchange.getResponse();
+
+        Object aaa = session.getAttribute("aaa");
+        session.getAttributes().put("aa", "bb");
+
+
         return "Hello World!!! key = " + key;
     }
 
@@ -34,7 +51,9 @@ public class HelloController {
 
     @GetMapping("/haha")
     public Mono<String> haha() {
-        return Mono.just("haha api");
+        return Mono.just(0)
+                .map(i -> 10 / i)
+                .map(i -> "哈哈-" + i);
     }
 
     @GetMapping("/hehe")

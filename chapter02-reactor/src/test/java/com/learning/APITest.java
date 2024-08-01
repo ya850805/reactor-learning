@@ -389,6 +389,14 @@ public class APITest {
                 .contextWrite(Context.of("prefix", "哈哈"))  // ThreadLocal共享了數據，上游的所有人能看到，Context由下游傳播給上游
                 .subscribe(v -> System.out.println("v = " + v));
     }
+
+    @Test
+    void next() {
+        Integer block = Flux.just(1, 2, 3)
+                .next()  // 直接要到下一個元素
+                .block();
+        System.out.println(block);
+    }
 }
 
 class BusinessException extends RuntimeException {
