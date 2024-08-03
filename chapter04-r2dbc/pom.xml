@@ -18,10 +18,23 @@
     </properties>
 
     <dependencies>
+        <!--r2dbc驅動-->
         <dependency>
             <groupId>io.asyncer</groupId>
             <artifactId>r2dbc-mysql</artifactId>
             <version>1.0.5</version>
+        </dependency>
+
+        <!--響應式web-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!--響應式Spring Data R2dbc-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
         </dependency>
 
         <dependency>
