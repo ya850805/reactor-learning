@@ -23,8 +23,8 @@ import reactor.core.publisher.Flux;
 @RestController
 public class AuthorController {
 
-    @GetMapping("/author")
-    public Flux<TAuthor> getAllAuthor() {
-
-    }
+//    @GetMapping("/author")
+//    public Flux<TAuthor> getAllAuthor() {
+//
+//    }
 }
