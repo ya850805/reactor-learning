@@ -1,6 +1,7 @@
 package com.learning.r2dbc;
 
 import com.learning.r2dbc.entity.TAuthor;
+import com.learning.r2dbc.respositories.AuthorRepository;
 import io.asyncer.r2dbc.mysql.MySqlConnectionConfiguration;
 import io.asyncer.r2dbc.mysql.MySqlConnectionFactory;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * @author jason
@@ -33,6 +35,9 @@ public class R2DBCTest {
 
     @Autowired
     private DatabaseClient databaseClient;  // 貼近底層，join操作好做，複雜查詢好用
+
+    @Autowired
+    private AuthorRepository authorRepository;
 
     @Test
     void connection() throws IOException {
@@ -100,6 +105,25 @@ public class R2DBCTest {
                     String name = map.get("name").toString();
                     return new TAuthor(Long.parseLong(id), name);
                 })
+                .subscribe(tAuthor -> System.out.println("tAuthor = " + tAuthor));
+
+        System.in.read();
+    }
+
+    @Test
+    void testAuthorRepository() throws IOException {
+        // 簡單查詢
+//        authorRepository.findAll()
+//                .subscribe(tAuthor -> System.out.println("tAuthor = " + tAuthor));
+
+        // 複雜查詢：1. QBE API  2. 自定義方法  3. 自定義SQL
+        // 方法起名
+//        authorRepository.findAllByIdInAndNameLike(Arrays.asList(1L, 2L), "張%")
+//                .subscribe(tAuthor -> System.out.println("tAuthor = " + tAuthor));
+
+
+        // 自定義@Query註解
+        authorRepository.test()
                 .subscribe(tAuthor -> System.out.println("tAuthor = " + tAuthor));
 
         System.in.read();
