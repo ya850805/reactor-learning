@@ -2,6 +2,7 @@ package com.learning.r2dbc;
 
 import com.learning.r2dbc.entity.TAuthor;
 import com.learning.r2dbc.respositories.AuthorRepository;
+import com.learning.r2dbc.respositories.BookRepository;
 import io.asyncer.r2dbc.mysql.MySqlConnectionConfiguration;
 import io.asyncer.r2dbc.mysql.MySqlConnectionFactory;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,11 @@ import java.util.Arrays;
  *  思想：
  *      1. 有了r2dbc，我們的應用可以在數據庫層面天然支持高并發、高吞吐量
  *      2. 並不能提升開發效率
+ *
+ *  最佳實踐：提升生產效率的做法
+ *      1. Spring Data R2DBC 基礎的CRUD用R2dbcRepository提供好了
+ *      2. 自定義複雜SQL(單表)可以使用@Query
+ *      3. 多表查詢複雜結果集：DatabaseClient 自定義SQL及結果封裝
  **/
 @SpringBootTest
 public class R2DBCTest {
@@ -38,6 +44,9 @@ public class R2DBCTest {
 
     @Autowired
     private AuthorRepository authorRepository;
+
+    @Autowired
+    private BookRepository bookRepository;
 
     @Test
     void connection() throws IOException {
@@ -125,6 +134,17 @@ public class R2DBCTest {
         // 自定義@Query註解
         authorRepository.test()
                 .subscribe(tAuthor -> System.out.println("tAuthor = " + tAuthor));
+
+        System.in.read();
+    }
+
+    @Test
+    void testBookRepository() throws IOException {
+//        bookRepository.findAll()
+//                .subscribe(book -> System.out.println("book = " + book));
+
+        bookRepository.findBookAndAuthor(1L)
+                .subscribe(book -> System.out.println("book = " + book));
 
         System.in.read();
     }
