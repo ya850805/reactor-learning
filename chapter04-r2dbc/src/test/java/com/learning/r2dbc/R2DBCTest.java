@@ -2,6 +2,7 @@ package com.learning.r2dbc;
 
 import com.learning.r2dbc.entity.TAuthor;
 import com.learning.r2dbc.respositories.AuthorRepository;
+import com.learning.r2dbc.respositories.BookAuthorRepository;
 import com.learning.r2dbc.respositories.BookRepository;
 import io.asyncer.r2dbc.mysql.MySqlConnectionConfiguration;
 import io.asyncer.r2dbc.mysql.MySqlConnectionFactory;
@@ -47,6 +48,9 @@ public class R2DBCTest {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Autowired
+    private BookAuthorRepository bookAuthorRepository;  // 做複雜查詢的
 
     @Test
     void connection() throws IOException {
@@ -143,8 +147,20 @@ public class R2DBCTest {
 //        bookRepository.findAll()
 //                .subscribe(book -> System.out.println("book = " + book));
 
-        bookRepository.findBookAndAuthor(1L)
-                .subscribe(book -> System.out.println("book = " + book));
+        // 自定義轉換器封裝 BookConverter
+//        bookRepository.findBookAndAuthor(1L)
+//                .subscribe(book -> System.out.println("book = " + book));
+
+        // 有了自定義轉換器後，會對以前的CURD產生影響(因為一般單表查詢沒有連接其他表的字段)
+        // 轉換器的工作時機：Spring Data發現方法簽名只要是返回TBook，就會利用自定義轉換器進行工作
+        // 解決辦法：
+        //      1. 寫新的vo、repository + 自定義類型轉換器：TBookAuthor
+        //      2. converter多寫判斷，兼容更多表類型：source.getMetadata().contains("name")
+        System.out.println(bookRepository.findById(1L).block());
+
+        System.out.println("===");
+
+        System.out.println(bookAuthorRepository.findBookAndAuthor(1L).block());
 
         System.in.read();
     }

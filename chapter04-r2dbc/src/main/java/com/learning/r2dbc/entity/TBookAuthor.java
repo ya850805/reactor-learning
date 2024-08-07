@@ -9,16 +9,17 @@ import java.time.Instant;
 /**
  * @author jason
  * @description
- * @create 2024/8/5 14:45
+ * @create 2024/8/6 20:21
  **/
 @Table("t_book")
 @Data
-public class TBook {
+public class TBookAuthor {
+
     @Id
     private Long id;
     private String title;
     private Long authorId;
     private Instant publishTime;  // 響應式中日期的映射用Instant或LocalDate、LocalDateTime
 
-//    private TAuthor author;  // 每一本書有唯一作者，查的時候也一起查詢出來
+    private TAuthor author;  // 每一本書有唯一作者，查的時候也一起查詢出來
 }
