@@ -77,7 +77,7 @@ public class R2DBCTest {
                 .flatMap(result -> result.map(readable -> {
                     Long id = readable.get("id", Long.class);
                     String name = readable.get("name", String.class);
-                    return new TAuthor(id, name);
+                    return new TAuthor(id, name, null);
                 }))
                 .subscribe(author -> System.out.println("author = " + author));
 
@@ -116,7 +116,7 @@ public class R2DBCTest {
                     System.out.println("map = " + map);
                     String id = map.get("id").toString();
                     String name = map.get("name").toString();
-                    return new TAuthor(Long.parseLong(id), name);
+                    return new TAuthor(Long.parseLong(id), name, null);
                 })
                 .subscribe(tAuthor -> System.out.println("tAuthor = " + tAuthor));
 
@@ -163,5 +163,29 @@ public class R2DBCTest {
         System.out.println(bookAuthorRepository.findBookAndAuthor(1L).block());
 
         System.in.read();
+    }
+
+    @Test
+    void testAuthor() throws IOException {
+        authorRepository.findById(1L)
+                .subscribe(tAuthor -> System.out.println("tAuthor = " + tAuthor));
+
+        System.in.read();
+    }
+
+    @Test
+    void testBufferUntilChanged() throws IOException {
+        Flux.just(1, 2, 3, 4 , 5, 6, 7, 8, 9)
+                .bufferUntilChanged(i -> i % 4 == 0)  // 如果下一個判定值比起上一個發生了變化就開一個新buffer，如果沒有變化就保存到原本buffer中
+                .subscribe(list -> System.out.println("list = " + list));
+
+        System.in.read();
+    }
+
+    @Test
+    void testOneToMany() {
+//        databaseClient.sql("select a.id aid, a.name, b.* from t_author a left join t_book b on a.id = b.author_id order by aid")
+//                .fetch()
+//                .all();
     }
 }
