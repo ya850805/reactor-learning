@@ -1,6 +1,7 @@
 package com.learning.r2dbc;
 
 import com.learning.r2dbc.entity.TAuthor;
+import com.learning.r2dbc.entity.TBook;
 import com.learning.r2dbc.respositories.AuthorRepository;
 import com.learning.r2dbc.respositories.BookAuthorRepository;
 import com.learning.r2dbc.respositories.BookRepository;
@@ -13,11 +14,14 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
 import org.springframework.r2dbc.core.DatabaseClient;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author jason
@@ -175,6 +179,8 @@ public class R2DBCTest {
 
     @Test
     void testBufferUntilChanged() throws IOException {
+        // bufferUntilChanged使用前提：數據已經按照變化排好了序
+        // groupby：允許亂序
         Flux.just(1, 2, 3, 4 , 5, 6, 7, 8, 9)
                 .bufferUntilChanged(i -> i % 4 == 0)  // 如果下一個判定值比起上一個發生了變化就開一個新buffer，如果沒有變化就保存到原本buffer中
                 .subscribe(list -> System.out.println("list = " + list));
@@ -183,9 +189,31 @@ public class R2DBCTest {
     }
 
     @Test
-    void testOneToMany() {
-//        databaseClient.sql("select a.id aid, a.name, b.* from t_author a left join t_book b on a.id = b.author_id order by aid")
-//                .fetch()
-//                .all();
+    void testOneToMany() throws IOException {
+        Flux<TAuthor> flux = databaseClient.sql("select a.id aid, a.name, b.* from t_author a left join t_book b on a.id = b.author_id order by aid")
+                .fetch()
+                .all()
+                .bufferUntilChanged(rowMap -> Long.parseLong(rowMap.get("aid").toString()))  // 對象比較需要自己寫好equals方法
+                .map(list -> {
+                    TAuthor tAuthor = new TAuthor();
+                    Map<String, Object> map = list.get(0);
+                    tAuthor.setId(Long.parseLong(map.get("aid").toString()));
+                    tAuthor.setName(map.get("name").toString());
+
+                    List<TBook> tBooks = list.stream().map(ele -> {
+                        TBook tBook = new TBook();
+                        tBook.setId(Long.parseLong(ele.get("id").toString()));
+                        tBook.setTitle(ele.get("title").toString());
+                        tBook.setAuthorId(Long.parseLong(ele.get("author_id").toString()));
+                        return tBook;
+                    }).toList();
+
+                    tAuthor.setBooks(tBooks);
+                    return tAuthor;
+                });
+
+        flux.subscribe(tAuthor -> System.out.println("tAuthor = " + tAuthor));
+
+        System.in.read();
     }
 }
