@@ -2,6 +2,7 @@ package com.learning.security.component;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,8 +41,9 @@ public class AppReactiveUserDetailsService implements ReactiveUserDetailsService
                             .username(username)
                             .password(map.get("password").toString())
 //                            .passwordEncoder(passwordEncoder::encode)
-                            .authorities("download", "view", "delete")  //可以從map中取
-                            .roles("admin", "sale")  //可以從map中取
+//                            .authorities("download", "view", "delete")  //可以從map中取
+                            .authorities(new SimpleGrantedAuthority("delete"))
+                            .roles("admin", "sale", "haha")  //可以從map中取
                             .build();
                     return userDetails;
                 });
