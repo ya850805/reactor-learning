@@ -42,9 +42,12 @@ public class AppReactiveUserDetailsService implements ReactiveUserDetailsService
                             .password(map.get("password").toString())
 //                            .passwordEncoder(passwordEncoder::encode)
 //                            .authorities("download", "view", "delete")  //可以從map中取
-                            .authorities(new SimpleGrantedAuthority("delete"))
-                            .roles("admin", "sale", "haha")  //可以從map中取
+//                            .authorities(new SimpleGrantedAuthority("delete"))
+                            .roles("admin", "sale", "haha", "delete")  //可以從map中取
                             .build();
+
+                    // 角色和權限都被封裝成SimpleGrantedAuthority
+                    // 角色有ROLE_前綴，全縣沒有
                     return userDetails;
                 });
         return userDetailsMono;

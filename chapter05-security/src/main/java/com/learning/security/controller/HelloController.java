@@ -21,7 +21,8 @@ public class HelloController {
     // SpEL表達式
     // 角色haha：ROLE_haha
     // 沒有ROLE前綴是權限
-    @PreAuthorize("hasRole('haha') || hasAnyAuthority('delete')")
+//    @PreAuthorize("hasRole('haha') || hasAnyAuthority('delete')")
+    @PreAuthorize("hasRole('delete')")
     @GetMapping("/world")
     public Mono<String> world() {
         return Mono.just("world!");
